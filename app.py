@@ -1,13 +1,12 @@
 import os
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 
 app = FastAPI()
 
-# 跨域解决（必加，否则前端报网络错误）
+# 跨域配置，允许前端访问
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,21 +15,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 模型配置（qwen-plus）
+# 通义千问配置
 QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-QWEN_CHAT_MODEL = "qwen-plus"
+QWEN_MODEL = "qwen-plus"
 
-# 读取环境变量
+# 读取 API Key
 api_key = os.getenv("DASHSCOPE_API_KEY")
-if not api_key:
-    raise RuntimeError("⚠️ 未配置环境变量 DASHSCOPE_API_KEY")
-
 client = OpenAI(api_key=api_key, base_url=QWEN_BASE_URL)
 
 # 首页
 @app.get("/")
 def home():
-    return FileResponse("static.index.html")
+    return {"status": "running"}
 
 # 聊天接口
 class ChatMessage(BaseModel):
@@ -40,15 +36,9 @@ class ChatMessage(BaseModel):
 def chat(msg: ChatMessage):
     try:
         completion = client.chat.completions.create(
-            model=QWEN_CHAT_MODEL,
+            model=QWEN_MODEL,
             messages=[{"role": "user", "content": msg.message}]
         )
         return {"reply": completion.choices[0].message.content}
     except Exception as e:
-        print("错误：", str(e))
-        return {"reply": f"模型调用失败：{str(e)}"}
-
-# 启动
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+        return {"reply": "出错了：" + str(e)}
