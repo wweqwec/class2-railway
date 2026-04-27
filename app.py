@@ -1,12 +1,13 @@
 import os
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 
 app = FastAPI()
 
-# 跨域（必须加）
+# 跨域配置，必须加，否则前端连不上
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,18 +16,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 模型：qwen-plus
+# 模型配置：qwen-plus
 QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 QWEN_MODEL = "qwen-plus"
 
-# API Key
+# 读取环境变量
 api_key = os.getenv("DASHSCOPE_API_KEY")
 client = OpenAI(api_key=api_key, base_url=QWEN_BASE_URL)
 
-# 首页
+# 首页：返回 index.html
 @app.get("/")
 def home():
-    return {"status": "✅ 后端运行正常", "model": "qwen-plus"}
+    return FileResponse("index.html")
 
 # 聊天接口
 class ChatMessage(BaseModel):
@@ -41,4 +42,4 @@ def chat(msg: ChatMessage):
         )
         return {"reply": completion.choices[0].message.content}
     except Exception as e:
-        return {"reply": "错误：" + str(e)}
+        return {"reply": "出错了：" + str(e)}
