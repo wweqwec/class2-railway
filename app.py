@@ -1,72 +1,54 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-import httpx
 import os
-import openai
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from openai import OpenAI
 
 app = FastAPI()
 
-# 静态文件（你的网页）
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# 跨域解决（必加，否则前端报网络错误）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# 模型配置（qwen-plus）
+QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+QWEN_CHAT_MODEL = "qwen-plus"
+
+# 读取环境变量
+api_key = os.getenv("DASHSCOPE_API_KEY")
+if not api_key:
+    raise RuntimeError("⚠️ 未配置环境变量 DASHSCOPE_API_KEY")
+
+client = OpenAI(api_key=api_key, base_url=QWEN_BASE_URL)
+
+# 首页
 @app.get("/")
-async def index():
+def home():
     return FileResponse("static/index.html")
 
-# ======================
-# 原有通用聊天功能（完全不变）
-# ======================
+# 聊天接口
+class ChatMessage(BaseModel):
+    message: str
+
 @app.post("/chat")
-async def chat(request: Request):
-    data = await request.json()
-    msg = data.get("message", "")
-    
+def chat(msg: ChatMessage):
     try:
-        client = openai.OpenAI(
-            api_key=os.getenv("DASHSCOPE_API_KEY"),
-            base_url="https://dashscope.aliyuncs.com/v1"
+        completion = client.chat.completions.create(
+            model=QWEN_CHAT_MODEL,
+            messages=[{"role": "user", "content": msg.message}]
         )
-        response = client.chat.completions.create(
-            model="qwen-turbo",
-            messages=[{"role": "user", "content": msg}]
-        )
-        return {"reply": response.choices[0].message.content}
+        return {"reply": completion.choices[0].message.content}
     except Exception as e:
-        return {"reply": f"出错：{str(e)}"}
+        print("错误：", str(e))
+        return {"reply": f"模型调用失败：{str(e)}"}
 
-# ======================
-# 新增：调用 FastGPT 家电客服
-# ======================
-@app.post("/chat_service")
-async def chat_service(request: Request):
-    data = await request.json()
-    msg = data.get("message", "")
-
-    base_url = os.getenv("FASTGPT_API_BASE")
-    api_key = os.getenv("FASTGPT_API_KEY")
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "chatId": "chat_" + os.urandom(8).hex(),
-        "stream": False,
-        "messages": [{"role": "user", "content": msg}]
-    }
-
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{base_url}/v1/chat/completions",
-                json=payload,
-                headers=headers,
-                timeout=30
-            )
-        response.raise_for_status()
-        result = response.json()
-        return {"reply": result["choices"][0]["message"]["content"]}
-    except Exception as e:
-        return {"reply": f"客服出错：{str(e)}"}
+# 启动
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
