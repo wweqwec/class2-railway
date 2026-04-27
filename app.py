@@ -30,7 +30,7 @@ client = OpenAI(api_key=api_key, base_url=QWEN_BASE_URL)
 # 首页
 @app.get("/")
 def home():
-    return FileResponse("static/index.html")
+    return FileResponse("static.index.html")
 
 # 聊天接口
 class ChatMessage(BaseModel):
