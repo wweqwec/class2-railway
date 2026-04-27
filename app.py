@@ -7,7 +7,7 @@ from openai import OpenAI
 
 app = FastAPI()
 
-# 跨域配置，必须加，否则前端连不上
+# 跨域
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,15 +16,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 模型配置：qwen-plus
+# qwen-plus 模型
 QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 QWEN_MODEL = "qwen-plus"
 
-# 读取环境变量
 api_key = os.getenv("DASHSCOPE_API_KEY")
 client = OpenAI(api_key=api_key, base_url=QWEN_BASE_URL)
 
-# 首页：返回 index.html
+# --------------------------
+# 这里已经改成 static.index.html ✅
+# --------------------------
 @app.get("/")
 def home():
     return FileResponse("static.index.html")
@@ -42,4 +43,4 @@ def chat(msg: ChatMessage):
         )
         return {"reply": completion.choices[0].message.content}
     except Exception as e:
-        return {"reply": "出错了：" + str(e)}
+        return {"reply": "出错：" + str(e)}
