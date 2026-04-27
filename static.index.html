@@ -31,8 +31,7 @@
             document.getElementById("input").value = "";
 
             try {
-                // 这里已经改成了你的 Railway 后端地址
-                let res = await fetch("https://class2-railway-production.up.railway.app/chat", {
+                let res = await fetch("http://127.0.0.1:8000/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ message: msg })
