@@ -31,16 +31,17 @@
             document.getElementById("input").value = "";
 
             try {
-                // 已替换为你的 Railway 公网地址
-                let res = await fetch("https://class2-railway-production.up.railway.app/chat", {
+                // 直接请求同域名下的 /chat 接口
+                let res = await fetch("/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ message: msg })
                 });
 
-                if (!res.ok) throw new Error("后端返回错误");
+                if (!res.ok) throw new Error("请求失败");
 
                 let data = await res.json();
+                // 严格匹配后端返回的 reply 字段
                 let reply = data.reply || "未获取到回复";
                 chat.innerHTML += `<div class="bot"><div class="text">${reply}</div></div>`;
                 chat.scrollTop = chat.scrollHeight;
