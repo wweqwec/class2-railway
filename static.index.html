@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI聊天机器人</title>
+    <style>
+        body{max-width:700px;margin:30px auto;font-family:Arial}
+        #chat{height:500px;border:1px solid #ddd;padding:20px;overflow-y:auto;border-radius:8px}
+        .user{text-align:right;margin:8px 0}
+        .bot{text-align:left;margin:8px 0}
+        .text{display:inline-block;padding:10px 14px;border-radius:12px;max-width:70%}
+        .user .text{background:#007bff;color:white}
+        .bot .text{background:#f1f1f1}
+        #input{width:75%;padding:10px;margin-top:10px}
+        button{padding:10px 16px}
+    </style>
+</head>
+<body>
+    <h2>AI 聊天机器人 (qwen-plus)</h2>
+    <div id="chat"></div>
+    <input type="text" id="input" placeholder="输入消息...">
+    <button onclick="send()">发送</button>
+
+    <script>
+        async function send() {
+            let msg = document.getElementById("input").value.trim();
+            if (!msg) return;
+
+            let chat = document.getElementById("chat");
+            chat.innerHTML += `<div class="user"><div class="text">${msg}</div></div>`;
+            document.getElementById("input").value = "";
+
+            try {
+                let res = await fetch("http://127.0.0.1:8000/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: msg })
+                });
+                let data = await res.json();
+                chat.innerHTML += `<div class="bot"><div class="text">${data.reply}</div></div>`;
+                chat.scrollTop = chat.scrollHeight;
+            } catch (e) {
+                chat.innerHTML += `<div class="bot"><div class="text">网络错误，请检查后端是否启动</div></div>`;
+            }
+        }
+    </script>
+</body>
+</html>
