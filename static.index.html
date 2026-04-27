@@ -31,7 +31,7 @@
             document.getElementById("input").value = "";
 
             try {
-                // 这里已替换为你的 Railway 后端公网地址
+                // 这里必须改成你的 Railway 公网地址
                 let res = await fetch("https://class2-railway-production.up.railway.app/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
